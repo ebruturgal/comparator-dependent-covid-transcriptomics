@@ -1,0 +1,26 @@
+# R session and project files
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Raw GEO data and downloaded supplementary folders
+GSE282464/
+GSE199816/
+GSE161731/
+*.tar
+*.gz
+*.zip
+
+# Generated analysis outputs
+*.csv
+*.tsv
+*.png
+*.pdf
+*.rds
+*.RDS
+
+# Keep repository source files
+!README.md
+!scripts/
+!scripts/*.R
