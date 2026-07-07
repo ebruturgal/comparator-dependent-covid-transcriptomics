@@ -4902,6 +4902,40 @@ ggsave(
   bg = "white"
 )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if (!requireNamespace("ggplot2", quietly = TRUE)) install.packages("ggplot2")
 if (!requireNamespace("patchwork", quietly = TRUE)) install.packages("patchwork")
 if (!requireNamespace("pROC", quietly = TRUE)) install.packages("pROC")
@@ -5024,124 +5058,131 @@ ggsave(
   height = 10,
   dpi = 600
 )
-############################################################
-# Build Table 2: External validation performance summary
-#
-# Run this script in the same working directory where the external
-# validation CSV outputs were written by final_stable_analysis.R.
-############################################################
+#!/usr/bin/env Rscript
 
-required_files <- c(
-  "GSE199816_ExternalValidation_Metrics.csv",
-  "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv",
-  "GSE161731_ExternalValidation_Metrics.csv",
-  "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv",
-  "ExternalValidation_Calibration_Summary.csv",
-  "DeLong_ExternalValidation_Comparison.csv"
-)
+# Builds Table 2: external validation performance of the locked Elastic Net model.
+# Default input/output folder: C:/Users/User/Documents
+# Usage:
+# Rscript scripts/make_table2_external_validation.R
+# Rscript scripts/make_table2_external_validation.R "path/to/input_csvs" "path/to/output_folder"
 
-missing_files <- required_files[!file.exists(required_files)]
-if (length(missing_files) > 0) {
-  stop(
-    "The following required files are missing:\n",
-    paste0(" - ", missing_files, collapse = "\n"),
-    "\n\nRun final_stable_analysis.R first, then rerun this script from the output directory."
-  )
-}
+args <- commandArgs(trailingOnly = TRUE)
 
-read_one <- function(path) {
+data_dir <- ifelse(length(args) >= 1, args[1], "C:/Users/User/Documents")
+output_dir <- ifelse(length(args) >= 2, args[2], data_dir)
+
+read_required_csv <- function(file) {
+  path <- file.path(data_dir, file)
+  if (!file.exists(path)) {
+    stop("Required file not found: ", path)
+  }
   read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
 }
 
-add_missing_columns <- function(df, cols) {
-  for (cc in cols) {
-    if (!cc %in% names(df)) df[[cc]] <- NA
+clean_name <- function(x) {
+  gsub("[^a-z0-9]", "", tolower(x))
+}
+
+get_column <- function(df, candidates, default = NA) {
+  hits <- match(clean_name(candidates), clean_name(names(df)))
+  hits <- hits[!is.na(hits)]
+
+  if (length(hits) == 0) {
+    return(rep(default, nrow(df)))
   }
-  df
+
+  df[[hits[1]]]
 }
 
-metric_cols <- c(
-  "auc", "auc_ci_low", "auc_ci_mid", "auc_ci_high",
-  "accuracy", "balanced_accuracy", "sensitivity", "specificity",
-  "precision", "f1", "mcc", "brier", "threshold"
-)
-
-format_dataset_rows <- function(dataset, comparator, metrics_05_path, metrics_youden_path) {
-  m05 <- read_one(metrics_05_path)
-  my <- read_one(metrics_youden_path)
-  
-  m05 <- add_missing_columns(m05, metric_cols)
-  my <- add_missing_columns(my, metric_cols)
-  
-  m05$threshold <- 0.5
-  m05$threshold_type <- "0.5"
-  my$threshold_type <- "Youden"
-  
-  out <- rbind(m05[, c(metric_cols, "threshold_type")], my[, c(metric_cols, "threshold_type")])
-  out$external_dataset <- dataset
-  out$comparator_setting <- comparator
-  
-  out[, c(
-    "external_dataset", "comparator_setting", "threshold_type", "threshold",
-    "auc", "auc_ci_low", "auc_ci_high",
-    "accuracy", "balanced_accuracy", "sensitivity", "specificity",
-    "precision", "f1", "mcc", "brier"
-  )]
+first_value <- function(x) {
+  x <- x[!is.na(x) & x != ""]
+  if (length(x) == 0) return(NA)
+  x[1]
 }
 
-detail_table <- rbind(
-  format_dataset_rows(
-    dataset = "GSE199816",
-    comparator = "COVID-19 vs sepsis",
-    metrics_05_path = "GSE199816_ExternalValidation_Metrics.csv",
-    metrics_youden_path = "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv"
+as_number <- function(x) {
+  suppressWarnings(as.numeric(x))
+}
+
+extract_external_metrics <- function(metrics_file, youden_file, dataset, comparator) {
+  metrics <- read_required_csv(metrics_file)
+  youden <- read_required_csv(youden_file)
+
+  data.frame(
+    Dataset = dataset,
+    Comparator = comparator,
+    Threshold = as_number(first_value(get_column(youden, c("threshold", "youden_threshold", "best_threshold")))),
+    AUC = as_number(first_value(get_column(metrics, c("auc", "roc_auc")))),
+    AUC_lower_95CI = as_number(first_value(get_column(metrics, c("auc_lower", "auc_ci_low", "ci_lower", "lower95")))),
+    AUC_upper_95CI = as_number(first_value(get_column(metrics, c("auc_upper", "auc_ci_high", "ci_upper", "upper95")))),
+    Accuracy = as_number(first_value(get_column(youden, c("accuracy", "acc")))),
+    Sensitivity = as_number(first_value(get_column(youden, c("sensitivity", "recall", "tpr")))),
+    Specificity = as_number(first_value(get_column(youden, c("specificity", "tnr")))),
+    Precision = as_number(first_value(get_column(youden, c("precision", "ppv")))),
+    F1 = as_number(first_value(get_column(youden, c("f1", "f1_score")))),
+    MCC = as_number(first_value(get_column(youden, c("mcc")))),
+    Brier_score = as_number(first_value(get_column(metrics, c("brier", "brier_score")))),
+    stringsAsFactors = FALSE
+  )
+}
+
+table2 <- rbind(
+  extract_external_metrics(
+    "GSE161731_ExternalValidation_Metrics.csv",
+    "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv",
+    "GSE161731",
+    "COVID-19 versus influenza"
   ),
-  format_dataset_rows(
-    dataset = "GSE161731",
-    comparator = "COVID-19 vs influenza",
-    metrics_05_path = "GSE161731_ExternalValidation_Metrics.csv",
-    metrics_youden_path = "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv"
+  extract_external_metrics(
+    "GSE199816_ExternalValidation_Metrics.csv",
+    "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv",
+    "GSE199816",
+    "COVID-19 versus sepsis/septic shock"
   )
 )
 
-calibration <- read_one("ExternalValidation_Calibration_Summary.csv")
-calibration <- add_missing_columns(
-  calibration,
-  c("dataset", "calibration_intercept", "calibration_slope", "auc", "brier")
+calibration <- read_required_csv("ExternalValidation_Calibration_Summary.csv")
+dataset_col <- get_column(calibration, c("dataset", "external_dataset"))
+
+lookup_calibration <- function(dataset, candidates) {
+  idx <- which(dataset_col == dataset)
+  if (length(idx) == 0) return(NA)
+
+  as_number(first_value(get_column(
+    calibration[idx, , drop = FALSE],
+    candidates
+  )))
+}
+
+table2$Calibration_intercept <- c(
+  lookup_calibration("GSE161731", c("calibration_intercept", "intercept")),
+  lookup_calibration("GSE199816", c("calibration_intercept", "intercept"))
 )
 
-delong <- read_one("DeLong_ExternalValidation_Comparison.csv")
-delong <- add_missing_columns(delong, c("comparison", "auc_1", "auc_2", "p_value", "method"))
-
-detail_table <- merge(
-  detail_table,
-  calibration[, c("dataset", "calibration_intercept", "calibration_slope")],
-  by.x = "external_dataset",
-  by.y = "dataset",
-  all.x = TRUE
+table2$Calibration_slope <- c(
+  lookup_calibration("GSE161731", c("calibration_slope", "slope")),
+  lookup_calibration("GSE199816", c("calibration_slope", "slope"))
 )
 
-detail_table$delong_comparison <- if (nrow(delong) >= 1) delong$comparison[1] else NA
-detail_table$delong_p_value <- if (nrow(delong) >= 1) delong$p_value[1] else NA
-detail_table$delong_method <- if (nrow(delong) >= 1) delong$method[1] else NA
+table2$Calibration_p_value <- c(
+  lookup_calibration("GSE161731", c("calibration_p", "calibration_p_value", "p_value")),
+  lookup_calibration("GSE199816", c("calibration_p", "calibration_p_value", "p_value"))
+)
 
-detail_table <- detail_table[order(detail_table$external_dataset, detail_table$threshold_type), ]
+delong <- read_required_csv("DeLong_ExternalValidation_Comparison.csv")
+table2$DeLong_p_value <- as_number(first_value(get_column(
+  delong,
+  c("p_value", "pvalue", "delong_p", "delong_p_value")
+)))
 
-# Manuscript-ready Table 2: one row per external cohort using Youden
-# threshold-based metrics, plus discrimination, Brier score, and calibration.
-table2 <- subset(detail_table, threshold_type == "Youden")
-table2 <- table2[, c(
-  "external_dataset", "comparator_setting", "threshold",
-  "auc", "auc_ci_low", "auc_ci_high",
-  "accuracy", "balanced_accuracy", "sensitivity", "specificity",
-  "precision", "f1", "mcc", "brier",
-  "calibration_intercept", "calibration_slope",
-  "delong_comparison", "delong_p_value", "delong_method"
-)]
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
 
-write.csv(table2, "Table2_ExternalValidation_Performance.csv", row.names = FALSE)
-write.csv(detail_table, "Table2_ExternalValidation_Performance_Detailed.csv", row.names = FALSE)
+write.csv(
+  table2,
+  file.path(output_dir, "Table2_ExternalValidation_Performance.csv"),
+  row.names = FALSE
+)
 
-cat("\nWrote:\n")
-cat("- Table2_ExternalValidation_Performance.csv\n")
-cat("- Table2_ExternalValidation_Performance_Detailed.csv\n")
+message("Saved Table 2 to: ", file.path(output_dir, "Table2_ExternalValidation_Performance.csv"))
