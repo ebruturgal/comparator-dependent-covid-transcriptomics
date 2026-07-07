@@ -135,3 +135,10 @@ Examples of generated files include:
 ## Citation
 
 If you use this workflow, cite the relevant GEO datasets and software packages used in the analysis, including edgeR, glmnet, xgboost, randomForest, gpboost, pROC, and GEOquery.
+
+### Build Table 2
+
+This script combines the external validation CSV outputs into one manuscript-ready Table 2.
+
+```bash
+Rscript scripts/make_table2_external_validation.R
