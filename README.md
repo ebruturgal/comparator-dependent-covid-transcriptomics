@@ -8,7 +8,8 @@ This repository contains the R analysis script used for a comparator-aware bench
 .
 |-- README.md
 |-- scripts/
-|   `-- final_stable_analysis.R
+|   |-- final_stable_analysis.R
+|   `-- make_table2_external_validation.R
 `-- .gitignore
 ```
 
@@ -90,6 +91,23 @@ Rscript scripts/final_stable_analysis.R
 
 The script writes CSV, PNG, and PDF outputs to the working directory.
 
+To create the manuscript-ready external validation Table 2 after the main workflow finishes:
+
+```r
+source("scripts/make_table2_external_validation.R")
+```
+
+or:
+
+```bash
+Rscript scripts/make_table2_external_validation.R
+```
+
+This writes:
+
+- `Table2_ExternalValidation_Performance.csv`
+- `Table2_ExternalValidation_Performance_Detailed.csv`
+
 ## Important Notes
 
 - Large raw GEO files and generated analysis outputs are intentionally ignored by `.gitignore`.
@@ -111,6 +129,7 @@ Examples of generated files include:
 - `GSE161731_ExternalValidation_Predictions.csv`
 - `ExternalValidation_Calibration_Summary.csv`
 - `DeLong_ExternalValidation_Comparison.csv`
+- `Table2_ExternalValidation_Performance.csv`
 - ROC, calibration, decision-curve, and heatmap figures
 
 ## Citation
