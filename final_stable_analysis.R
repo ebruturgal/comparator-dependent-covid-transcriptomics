@@ -5631,13 +5631,13 @@ format_dataset_rows <- function(dataset, comparator, metrics_05_path, metrics_yo
 detail_table <- rbind(
   format_dataset_rows(
     dataset = "GSE199816",
-    comparator = "COVID-19 vs sepsis",
+    comparator = "COVID-19 versus sepsis/septic shock",
     metrics_05_path = "GSE199816_ExternalValidation_Metrics.csv",
     metrics_youden_path = "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv"
   ),
   format_dataset_rows(
     dataset = "GSE161731",
-    comparator = "COVID-19 vs influenza",
+    comparator = "COVID-19 versus influenza",
     metrics_05_path = "GSE161731_ExternalValidation_Metrics.csv",
     metrics_youden_path = "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv"
   )
@@ -5669,16 +5669,36 @@ detail_table <- detail_table[order(detail_table$external_dataset, detail_table$t
 # Manuscript-ready Table 2: one row per external cohort using Youden
 # threshold-based metrics, plus discrimination, Brier score, and calibration.
 table2 <- subset(detail_table, threshold_type == "Youden")
-table2 <- table2[, c(
-  "external_dataset", "comparator_setting", "threshold",
-  "auc", "auc_ci_low", "auc_ci_high",
-  "accuracy", "balanced_accuracy", "sensitivity", "specificity",
-  "precision", "f1", "mcc", "brier",
-  "calibration_intercept", "calibration_slope",
-  "delong_comparison", "delong_p_value", "delong_method"
-)]
 
-write.csv(table2, "Table2_ExternalValidation_Performance.csv", row.names = FALSE)
+table2$auc_95_ci <- ifelse(
+  is.na(table2$auc_ci_low) | is.na(table2$auc_ci_high),
+  NA_character_,
+  paste0(sprintf("%.3f", table2$auc_ci_low), "-", sprintf("%.3f", table2$auc_ci_high))
+)
+
+table2_order <- match(table2$external_dataset, c("GSE199816", "GSE161731"))
+table2 <- table2[order(table2_order), ]
+
+table2_final <- data.frame(
+  "Dataset" = table2$external_dataset,
+  "Comparator setting" = table2$comparator_setting,
+  "Threshold type" = table2$threshold_type,
+  "Threshold" = round(table2$threshold, 3),
+  "AUC" = round(table2$auc, 3),
+  "95% CI" = table2$auc_95_ci,
+  "Accuracy" = round(table2$accuracy, 3),
+  "Sensitivity" = round(table2$sensitivity, 3),
+  "Specificity" = round(table2$specificity, 3),
+  "Precision" = round(table2$precision, 3),
+  "F1-score" = round(table2$f1, 3),
+  "MCC" = round(table2$mcc, 3),
+  "Brier score" = round(table2$brier, 3),
+  "Calibration intercept" = round(table2$calibration_intercept, 3),
+  "Calibration slope" = round(table2$calibration_slope, 3),
+  check.names = FALSE
+)
+
+write.csv(table2_final, "Table2_ExternalValidation_Performance.csv", row.names = FALSE)
 write.csv(detail_table, "Table2_ExternalValidation_Performance_Detailed.csv", row.names = FALSE)
 
 cat("\nWrote:\n")
