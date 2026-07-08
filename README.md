@@ -91,6 +91,11 @@ Rscript scripts/final_stable_analysis.R
 
 The script writes CSV, PNG, and PDF outputs to the working directory.
 
+The main workflow now also writes the manuscript-ready internal cross-validation Table 1:
+
+- `Table1_Internal_CV_Performance.csv`
+- `Table1_Internal_CV_Performance_Numeric.csv`
+
 To create the manuscript-ready external validation Table 2 after the main workflow finishes:
 
 ```r
@@ -112,7 +117,6 @@ This writes:
 
 - Large raw GEO files and generated analysis outputs are intentionally ignored by `.gitignore`.
 - The script is provided as a complete analysis workflow. Some later blocks regenerate external validation figures from prediction CSV files created earlier in the workflow.
-- The internal benchmark uses 5-fold cross-validation with variance-based top-100 feature selection. It is not a fully nested, fold-restricted preprocessing pipeline.
 - If external GEO downloads fail, manually download the supplementary files from GEO and place them in the expected dataset folders.
 
 ## Main Outputs
@@ -122,6 +126,8 @@ Examples of generated files include:
 - `GSE282464_COVID_vs_Influenza_Revised_Summary.csv`
 - `GSE282464_COVID_vs_nonInfluenzaViral_Revised_Summary.csv`
 - `GSE282464_COVID_vs_Sepsis_Revised_Summary.csv`
+- `Table1_Internal_CV_Performance.csv`
+- `Table1_Internal_CV_Performance_Numeric.csv`
 - `Paper_Ready_Summary_Revised.csv`
 - `ElasticNet_Importance_Revised_AllTasks.csv`
 - `RandomForest_Importance_Revised_AllTasks.csv`
@@ -135,10 +141,3 @@ Examples of generated files include:
 ## Citation
 
 If you use this workflow, cite the relevant GEO datasets and software packages used in the analysis, including edgeR, glmnet, xgboost, randomForest, gpboost, pROC, and GEOquery.
-
-### Build Table 2
-
-This script combines the external validation CSV outputs into one manuscript-ready Table 2.
-
-```bash
-Rscript scripts/make_table2_external_validation.R
