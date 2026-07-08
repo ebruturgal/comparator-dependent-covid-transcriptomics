@@ -1050,14 +1050,155 @@ pheatmap(
 dev.off()
 
 ############################################################
-# 16) MASTER FILES
+# 16) MASTER FILES + MANUSCRIPT TABLE 1
 ############################################################
 all_cv_results_long <- bind_rows(
   res_influenza$cv_results,
   res_noninfluenza$cv_results,
   res_sepsis$cv_results
 )
-write.csv(all_cv_results_long, "All_CV_Results_Long_Revised.csv", row.names = FALSE)
+
+write.csv(
+  all_cv_results_long,
+  "All_CV_Results_Long_Revised.csv",
+  row.names = FALSE
+)
+
+format_mean_sd <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  x <- x[is.finite(x)]
+  
+  if (length(x) == 0) {
+    return(NA_character_)
+  }
+  
+  mean_x <- mean(x, na.rm = TRUE)
+  sd_x <- ifelse(length(x) > 1, stats::sd(x, na.rm = TRUE), 0)
+  
+  paste0(
+    sprintf("%.3f", mean_x),
+    " +/- ",
+    sprintf("%.3f", sd_x)
+  )
+}
+
+standardize_task_label <- function(x) {
+  dplyr::case_when(
+    x == "covid_vs_influenza" ~
+      "COVID-19 versus influenza",
+    
+    x == "covid_vs_noninfluenza_viral" ~
+      "COVID-19 versus non-influenza viral infections",
+    
+    x == "covid_vs_sepsis" ~
+      "COVID-19 versus sepsis/septic shock",
+    
+    TRUE ~ as.character(x)
+  )
+}
+
+table1_internal_cv <- all_cv_results_long %>%
+  mutate(
+    Comparator = standardize_task_label(task),
+    Model = as.character(model)
+  ) %>%
+  group_by(Comparator, Model) %>%
+  summarise(
+    Folds = n_distinct(fold),
+    AUC = format_mean_sd(auc),
+    PR_AUC = format_mean_sd(pr_auc),
+    Accuracy = format_mean_sd(accuracy),
+    Balanced_accuracy = format_mean_sd(balanced_accuracy),
+    Sensitivity = format_mean_sd(sensitivity),
+    Specificity = format_mean_sd(specificity),
+    Precision = format_mean_sd(precision),
+    F1 = format_mean_sd(f1),
+    MCC = format_mean_sd(mcc),
+    Brier_score = format_mean_sd(brier),
+    .groups = "drop"
+  ) %>%
+  arrange(
+    factor(
+      Comparator,
+      levels = c(
+        "COVID-19 versus influenza",
+        "COVID-19 versus non-influenza viral infections",
+        "COVID-19 versus sepsis/septic shock"
+      )
+    ),
+    factor(
+      Model,
+      levels = c(
+        "ElasticNet",
+        "RandomForest",
+        "XGBoost",
+        "GPBoost_LightGBM"
+      )
+    )
+  )
+
+write.csv(
+  table1_internal_cv,
+  "Table1_Internal_CV_Performance.csv",
+  row.names = FALSE,
+  fileEncoding = "UTF-8"
+)
+
+table1_internal_cv_numeric <- all_cv_results_long %>%
+  mutate(
+    Comparator = standardize_task_label(task),
+    Model = as.character(model)
+  ) %>%
+  group_by(dataset, Comparator, Model) %>%
+  summarise(
+    folds = n_distinct(fold),
+    mean_auc = mean(auc, na.rm = TRUE),
+    sd_auc = sd(auc, na.rm = TRUE),
+    mean_pr_auc = mean(pr_auc, na.rm = TRUE),
+    sd_pr_auc = sd(pr_auc, na.rm = TRUE),
+    mean_accuracy = mean(accuracy, na.rm = TRUE),
+    sd_accuracy = sd(accuracy, na.rm = TRUE),
+    mean_balanced_accuracy = mean(balanced_accuracy, na.rm = TRUE),
+    sd_balanced_accuracy = sd(balanced_accuracy, na.rm = TRUE),
+    mean_sensitivity = mean(sensitivity, na.rm = TRUE),
+    sd_sensitivity = sd(sensitivity, na.rm = TRUE),
+    mean_specificity = mean(specificity, na.rm = TRUE),
+    sd_specificity = sd(specificity, na.rm = TRUE),
+    mean_precision = mean(precision, na.rm = TRUE),
+    sd_precision = sd(precision, na.rm = TRUE),
+    mean_f1 = mean(f1, na.rm = TRUE),
+    sd_f1 = sd(f1, na.rm = TRUE),
+    mean_mcc = mean(mcc, na.rm = TRUE),
+    sd_mcc = sd(mcc, na.rm = TRUE),
+    mean_brier = mean(brier, na.rm = TRUE),
+    sd_brier = sd(brier, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(
+    factor(
+      Comparator,
+      levels = c(
+        "COVID-19 versus influenza",
+        "COVID-19 versus non-influenza viral infections",
+        "COVID-19 versus sepsis/septic shock"
+      )
+    ),
+    factor(
+      Model,
+      levels = c(
+        "ElasticNet",
+        "RandomForest",
+        "XGBoost",
+        "GPBoost_LightGBM"
+      )
+    )
+  )
+
+write.csv(
+  table1_internal_cv_numeric,
+  "Table1_Internal_CV_Performance_Numeric.csv",
+  row.names = FALSE
+)
 
 paper_ready_summary <- bind_rows(
   res_influenza$summary_results %>% mutate(task_label = "COVID vs Influenza"),
@@ -1073,12 +1214,20 @@ paper_ready_summary <- bind_rows(
          mean_mcc, sd_mcc,
          mean_brier, sd_brier)
 
-write.csv(paper_ready_summary, "Paper_Ready_Summary_Revised.csv", row.names = FALSE)
+write.csv(
+  paper_ready_summary,
+  "Paper_Ready_Summary_Revised.csv",
+  row.names = FALSE
+)
 
 ############################################################
 # 17) DONE
 ############################################################
-cat("\nSaved revised files.\n")
+cat("\nSaved master files and manuscript Table 1.\n")
+cat("- All_CV_Results_Long_Revised.csv\n")
+cat("- Table1_Internal_CV_Performance.csv\n")
+cat("- Table1_Internal_CV_Performance_Numeric.csv\n")
+cat("- Paper_Ready_Summary_Revised.csv\n")
 
 
 
@@ -5058,131 +5207,3 @@ ggsave(
   height = 10,
   dpi = 600
 )
-#!/usr/bin/env Rscript
-
-# Builds Table 2: external validation performance of the locked Elastic Net model.
-# Default input/output folder: C:/Users/User/Documents
-# Usage:
-# Rscript scripts/make_table2_external_validation.R
-# Rscript scripts/make_table2_external_validation.R "path/to/input_csvs" "path/to/output_folder"
-
-args <- commandArgs(trailingOnly = TRUE)
-
-data_dir <- ifelse(length(args) >= 1, args[1], "C:/Users/User/Documents")
-output_dir <- ifelse(length(args) >= 2, args[2], data_dir)
-
-read_required_csv <- function(file) {
-  path <- file.path(data_dir, file)
-  if (!file.exists(path)) {
-    stop("Required file not found: ", path)
-  }
-  read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
-}
-
-clean_name <- function(x) {
-  gsub("[^a-z0-9]", "", tolower(x))
-}
-
-get_column <- function(df, candidates, default = NA) {
-  hits <- match(clean_name(candidates), clean_name(names(df)))
-  hits <- hits[!is.na(hits)]
-
-  if (length(hits) == 0) {
-    return(rep(default, nrow(df)))
-  }
-
-  df[[hits[1]]]
-}
-
-first_value <- function(x) {
-  x <- x[!is.na(x) & x != ""]
-  if (length(x) == 0) return(NA)
-  x[1]
-}
-
-as_number <- function(x) {
-  suppressWarnings(as.numeric(x))
-}
-
-extract_external_metrics <- function(metrics_file, youden_file, dataset, comparator) {
-  metrics <- read_required_csv(metrics_file)
-  youden <- read_required_csv(youden_file)
-
-  data.frame(
-    Dataset = dataset,
-    Comparator = comparator,
-    Threshold = as_number(first_value(get_column(youden, c("threshold", "youden_threshold", "best_threshold")))),
-    AUC = as_number(first_value(get_column(metrics, c("auc", "roc_auc")))),
-    AUC_lower_95CI = as_number(first_value(get_column(metrics, c("auc_lower", "auc_ci_low", "ci_lower", "lower95")))),
-    AUC_upper_95CI = as_number(first_value(get_column(metrics, c("auc_upper", "auc_ci_high", "ci_upper", "upper95")))),
-    Accuracy = as_number(first_value(get_column(youden, c("accuracy", "acc")))),
-    Sensitivity = as_number(first_value(get_column(youden, c("sensitivity", "recall", "tpr")))),
-    Specificity = as_number(first_value(get_column(youden, c("specificity", "tnr")))),
-    Precision = as_number(first_value(get_column(youden, c("precision", "ppv")))),
-    F1 = as_number(first_value(get_column(youden, c("f1", "f1_score")))),
-    MCC = as_number(first_value(get_column(youden, c("mcc")))),
-    Brier_score = as_number(first_value(get_column(metrics, c("brier", "brier_score")))),
-    stringsAsFactors = FALSE
-  )
-}
-
-table2 <- rbind(
-  extract_external_metrics(
-    "GSE161731_ExternalValidation_Metrics.csv",
-    "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv",
-    "GSE161731",
-    "COVID-19 versus influenza"
-  ),
-  extract_external_metrics(
-    "GSE199816_ExternalValidation_Metrics.csv",
-    "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv",
-    "GSE199816",
-    "COVID-19 versus sepsis/septic shock"
-  )
-)
-
-calibration <- read_required_csv("ExternalValidation_Calibration_Summary.csv")
-dataset_col <- get_column(calibration, c("dataset", "external_dataset"))
-
-lookup_calibration <- function(dataset, candidates) {
-  idx <- which(dataset_col == dataset)
-  if (length(idx) == 0) return(NA)
-
-  as_number(first_value(get_column(
-    calibration[idx, , drop = FALSE],
-    candidates
-  )))
-}
-
-table2$Calibration_intercept <- c(
-  lookup_calibration("GSE161731", c("calibration_intercept", "intercept")),
-  lookup_calibration("GSE199816", c("calibration_intercept", "intercept"))
-)
-
-table2$Calibration_slope <- c(
-  lookup_calibration("GSE161731", c("calibration_slope", "slope")),
-  lookup_calibration("GSE199816", c("calibration_slope", "slope"))
-)
-
-table2$Calibration_p_value <- c(
-  lookup_calibration("GSE161731", c("calibration_p", "calibration_p_value", "p_value")),
-  lookup_calibration("GSE199816", c("calibration_p", "calibration_p_value", "p_value"))
-)
-
-delong <- read_required_csv("DeLong_ExternalValidation_Comparison.csv")
-table2$DeLong_p_value <- as_number(first_value(get_column(
-  delong,
-  c("p_value", "pvalue", "delong_p", "delong_p_value")
-)))
-
-if (!dir.exists(output_dir)) {
-  dir.create(output_dir, recursive = TRUE)
-}
-
-write.csv(
-  table2,
-  file.path(output_dir, "Table2_ExternalValidation_Performance.csv"),
-  row.names = FALSE
-)
-
-message("Saved Table 2 to: ", file.path(output_dir, "Table2_ExternalValidation_Performance.csv"))
