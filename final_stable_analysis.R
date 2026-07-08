@@ -409,7 +409,7 @@ run_task_full_benchmark <- function(task_obj,
                                     dataset_name,
                                     task_name,
                                     seed = 123,
-                                    top_k = 100,
+                                    top_k = 200,
                                     k = 5) {
   pheno_task <- task_obj$pheno_task
   xmat <- task_obj$xmat
@@ -665,7 +665,7 @@ plot_heatmap_metrics <- function(summary_df, title_text, outfile) {
 ############################################################
 extract_model_importance <- function(xmat, pheno_task,
                                      model_name = c("ElasticNet", "XGBoost", "RandomForest"),
-                                     top_k = 100,
+                                     top_k = 200,
                                      positive_class = "COVID") {
   model_name <- match.arg(model_name)
   
@@ -802,21 +802,21 @@ res_influenza <- run_task_full_benchmark(
   task_obj = task_objects[["covid_vs_influenza"]],
   dataset_name = "GSE282464",
   task_name = "covid_vs_influenza",
-  seed = 123, top_k = 100, k = 5
+  seed = 123, top_k = 200, k = 5
 )
 
 res_noninfluenza <- run_task_full_benchmark(
   task_obj = task_objects[["covid_vs_noninfluenza_viral"]],
   dataset_name = "GSE282464",
   task_name = "covid_vs_noninfluenza_viral",
-  seed = 123, top_k = 100, k = 5
+  seed = 123, top_k = 200, k = 5
 )
 
 res_sepsis <- run_task_full_benchmark(
   task_obj = task_objects[["covid_vs_sepsis"]],
   dataset_name = "GSE282464",
   task_name = "covid_vs_sepsis",
-  seed = 123, top_k = 100, k = 5
+  seed = 123, top_k = 200, k = 5
 )
 
 ############################################################
@@ -925,7 +925,7 @@ enet_importance_list <- lapply(names(task_objects), function(tt) {
     xmat = obj$xmat,
     pheno_task = obj$pheno_task,
     model_name = "ElasticNet",
-    top_k = 100,
+    top_k = 200,
     positive_class = "COVID"
   )
   imp$task <- tt
@@ -942,7 +942,7 @@ rf_importance_list <- lapply(names(task_objects), function(tt) {
     xmat = obj$xmat,
     pheno_task = obj$pheno_task,
     model_name = "RandomForest",
-    top_k = 100,
+    top_k = 200,
     positive_class = "COVID"
   )
   imp$task <- tt
@@ -1398,7 +1398,7 @@ cat("Development samples:", nrow(x_dev_full), "\n")
 print(table(dev_pheno$label))
 
 # same feature strategy style as main script: variance-based top genes
-top_k_external <- 100
+top_k_external <- 200
 gene_var_dev <- apply(x_dev_full, 2, var, na.rm = TRUE)
 selected_genes_external <- names(sort(gene_var_dev, decreasing = TRUE))[1:min(top_k_external, length(gene_var_dev))]
 
@@ -1539,7 +1539,7 @@ cat("Number of extracted raw files:", length(raw_files_ext), "\n")
 print(head(basename(raw_files_ext), 10))
 
 if (length(raw_files_ext) == 0) {
-  stop("RAW tar a????ld?? ama i??inde dosya bulunamad??.")
+  stop("RAW tar archive was extracted, but no files were found inside.")
 }
 
 ############################################################
@@ -2511,7 +2511,7 @@ print(table(dev_pheno$label))
 x_dev_full <- t(dev_xmat)
 y_dev_full <- ifelse(dev_pheno$label == "COVID", 1, 0)
 
-top_k_external <- 100
+top_k_external <- 200
 gene_var_dev <- apply(x_dev_full, 2, var, na.rm = TRUE)
 selected_genes_external <- names(sort(gene_var_dev, decreasing = TRUE))[1:min(top_k_external, length(gene_var_dev))]
 
@@ -3272,7 +3272,7 @@ run_task_full_benchmark <- function(task_obj,
                                     dataset_name,
                                     task_name,
                                     seed = 123,
-                                    top_k = 100,
+                                    top_k = 200,
                                     k = 5) {
   pheno_task <- task_obj$pheno_task
   xmat <- task_obj$xmat
@@ -3434,7 +3434,7 @@ res_sepsis <- run_task_full_benchmark(
   dataset_name = "GSE282464",
   task_name = "covid_vs_sepsis",
   seed = 123,
-  top_k = 100,
+  top_k = 200,
   k = 5
 )
 
@@ -3680,7 +3680,7 @@ dev_xmat <- cpm(y, log = TRUE, prior.count = 1)
 x_dev_full <- t(dev_xmat)
 y_dev_full <- ifelse(dev_pheno$label == "COVID", 1, 0)
 
-top_k_external <- 100
+top_k_external <- 200
 gene_var_dev <- apply(x_dev_full, 2, var, na.rm = TRUE)
 selected_genes_external <- names(sort(gene_var_dev, decreasing = TRUE))[1:min(top_k_external, length(gene_var_dev))]
 x_dev_fs <- x_dev_full[, selected_genes_external, drop = FALSE]
@@ -4468,7 +4468,7 @@ prepare_dev_model <- function(task = c("covid_vs_sepsis", "covid_vs_influenza"))
   x_dev_full <- t(dev_xmat)
   y_dev_full <- ifelse(dev_pheno$label == "COVID", 1, 0)
   
-  top_k <- 100
+  top_k <- 200
   gene_var_dev <- apply(x_dev_full, 2, var, na.rm = TRUE)
   selected_genes <- names(sort(gene_var_dev, decreasing = TRUE))[1:min(top_k, length(gene_var_dev))]
   x_dev_fs <- x_dev_full[, selected_genes, drop = FALSE]
@@ -5046,26 +5046,26 @@ d199816 <- read_pred_file(f199816, "GSE199816")
 # ---------------------------------------------------------
 p1 <- plot_roc_panel(
   d161731,
-  "A. ROC ??? GSE161731",
+  "A. ROC - GSE161731",
   curve_color = "#D81B60"
 )
 
 p2 <- plot_roc_panel(
   d199816,
-  "B. ROC ??? GSE199816",
+  "B. ROC - GSE199816",
   curve_color = "#1E88E5"
 )
 
 p3 <- plot_cal_panel(
   d161731,
-  "C. Calibration ??? GSE161731",
+  "C. Calibration - GSE161731",
   point_color = "#43A047",
   line_color = "#43A047"
 )
 
 p4 <- plot_cal_panel(
   d199816,
-  "D. Calibration ??? GSE199816",
+  "D. Calibration - GSE199816",
   point_color = "#FB8C00",
   line_color = "#FB8C00"
 )
@@ -5169,7 +5169,7 @@ make_roc_plot <- function(df, panel_title, cohort_name) {
       title = paste0(panel_title, " ", cohort_name),
       subtitle = paste0(
         "AUC = ", sprintf("%.3f", auc_val),
-        " (95% CI ", sprintf("%.3f", auc_ci[1]), "???", sprintf("%.3f", auc_ci[3]), ")"
+        " (95% CI ", sprintf("%.3f", auc_ci[1]), "-", sprintf("%.3f", auc_ci[3]), ")"
       ),
       x = "False Positive Rate",
       y = "True Positive Rate"
@@ -5701,6 +5701,645 @@ table2_final <- data.frame(
 write.csv(table2_final, "Table2_ExternalValidation_Performance.csv", row.names = FALSE)
 write.csv(detail_table, "Table2_ExternalValidation_Performance_Detailed.csv", row.names = FALSE)
 
+supplementary_table_s6 <- data.frame(
+  "Comparison" = "GSE199816 vs GSE161731",
+  "AUC 1" = round(table2_final$AUC[table2_final$Dataset == "GSE199816"], 3),
+  "AUC 2" = round(table2_final$AUC[table2_final$Dataset == "GSE161731"], 3),
+  "p-value" = round(if (nrow(delong) >= 1) as.numeric(delong$p_value[1]) else NA_real_, 3),
+  "Method" = if (nrow(delong) >= 1) delong$method[1] else "DeLong's test for two ROC curves",
+  check.names = FALSE
+)
+
+write.csv(
+  supplementary_table_s6,
+  "Supplementary_Table_S6_DeLong.csv",
+  row.names = FALSE
+)
+
+comparator_settings_s4 <- c(
+  "COVID-19 versus influenza",
+  "COVID-19 versus non-influenza viral infections",
+  "COVID-19 versus sepsis/septic shock"
+)
+
+model_parameters_s4 <- data.frame(
+  Model = c(
+    "ElasticNet",
+    "GPBoost_LightGBM",
+    "RandomForest",
+    "XGBoost"
+  ),
+  Selected_parameters = c(
+    "family=binomial; alpha=0.5; lambda=lambda.min selected by cv.glmnet; type.measure=auc; nfolds=max(2, min(5, minimum class count))",
+    "objective=binary; learning_rate=0.03; max_depth=4; num_leaves=31; min_data_in_leaf=5; feature_fraction=0.8; bagging_fraction=1; bagging_freq=0; nrounds=120",
+    "ntree=300; mtry=randomForest classification default; nodesize=randomForest default; importance=TRUE",
+    "objective=binary:logistic; eval_metric=auc; eta=0.03; max_depth=4; subsample=1.0; colsample_bytree=0.8; min_child_weight=1; nrounds=120"
+  ),
+  Feature_selection = rep(
+    "Top 200 genes selected by variance within the training data for each fold/task",
+    4
+  ),
+  Tuning_note = c(
+    "Elastic Net lambda was selected internally by cv.glmnet; alpha was prespecified.",
+    "Prespecified parameters; no full model-specific tuning grid.",
+    "Prespecified parameters; no full model-specific tuning grid.",
+    "Prespecified parameters; no full model-specific tuning grid."
+  ),
+  stringsAsFactors = FALSE
+)
+
+supplementary_table_s4 <- do.call(
+  rbind,
+  lapply(
+    comparator_settings_s4,
+    function(setting) {
+      out <- model_parameters_s4
+      out$Comparator_setting <- setting
+      out[, c(
+        "Comparator_setting",
+        "Model",
+        "Selected_parameters",
+        "Feature_selection",
+        "Tuning_note"
+      )]
+    }
+  )
+)
+
+write.csv(
+  supplementary_table_s4,
+  "Supplementary_Table_S4_Selected_Model_Parameters.csv",
+  row.names = FALSE
+)
+
+make_supplementary_figure_s9 <- function(table2_final, delong_p, outfile) {
+  parse_ci <- function(x) {
+    parts <- strsplit(as.character(x), "-", fixed = TRUE)
+    do.call(
+      rbind,
+      lapply(parts, function(z) {
+        if (length(z) != 2) return(c(NA_real_, NA_real_))
+        as.numeric(z)
+      })
+    )
+  }
+  
+  png(outfile, width = 3600, height = 1350, res = 300)
+  old_par <- par(no.readonly = TRUE)
+  on.exit({
+    par(old_par)
+    dev.off()
+  })
+  
+  par(
+    mfrow = c(1, 3),
+    mar = c(5.2, 5.0, 4.8, 1.8),
+    oma = c(0, 0, 3.0, 0),
+    family = "sans"
+  )
+  
+  cohorts <- table2_final$Dataset
+  cohort_cols <- c("GSE199816" = "#D95F02", "GSE161731" = "#0072B2")
+  cols <- unname(cohort_cols[cohorts])
+  
+  ##########################################################
+  # A. External discrimination and overall error
+  ##########################################################
+  auc_vals <- as.numeric(table2_final$AUC)
+  brier_vals <- as.numeric(table2_final[["Brier score"]])
+  
+  panel_a <- rbind(
+    AUC = auc_vals,
+    `Brier score` = brier_vals
+  )
+  colnames(panel_a) <- cohorts
+  
+  bp_a <- barplot(
+    t(panel_a),
+    beside = TRUE,
+    ylim = c(0, 1.22),
+    col = cols,
+    border = NA,
+    ylab = "Value",
+    main = "A. External discrimination and overall error",
+    legend.text = cohorts,
+    args.legend = list(
+      x = "top",
+      horiz = TRUE,
+      bty = "n",
+      cex = 0.82,
+      title = "External cohort"
+    ),
+    cex.names = 0.9
+  )
+  abline(h = seq(0, 1.2, by = 0.3), col = "grey90", lty = 1)
+  text(bp_a, t(panel_a) + 0.03, sprintf("%.3f", t(panel_a)), cex = 0.75)
+  box()
+  
+  ##########################################################
+  # B. Calibration comparison
+  ##########################################################
+  panel_b <- rbind(
+    `Calibration slope` = as.numeric(table2_final[["Calibration slope"]]),
+    `Calibration intercept` = as.numeric(table2_final[["Calibration intercept"]])
+  )
+  colnames(panel_b) <- cohorts
+  
+  bp_b <- barplot(
+    t(panel_b),
+    beside = TRUE,
+    ylim = c(-0.18, 1.30),
+    col = cols,
+    border = NA,
+    ylab = "Value",
+    main = "B. Calibration comparison",
+    cex.names = 0.9
+  )
+  abline(h = seq(0, 1.2, by = 0.2), col = "grey92", lty = 1)
+  abline(h = 1, lty = 2, col = "grey45", lwd = 1.1)
+  abline(h = 0, lty = 3, col = "grey55", lwd = 1.0)
+  text(bp_b, t(panel_b) + 0.035, sprintf("%.3f", t(panel_b)), cex = 0.75)
+  text(min(bp_b) - 0.2, 1.08, "Ideal slope = 1", cex = 0.75, col = "grey35", adj = 0)
+  text(max(bp_b) - 0.6, -0.08, "Ideal intercept = 0", cex = 0.75, col = "grey35", adj = 0)
+  box()
+  
+  ##########################################################
+  # C. External ROC comparison with 95% CI
+  ##########################################################
+  ci_mat <- parse_ci(table2_final[["95% CI"]])
+  ci_low <- ci_mat[, 1]
+  ci_high <- ci_mat[, 2]
+  y_pos <- seq_along(cohorts)
+  
+  plot(
+    NA,
+    xlim = c(max(0.70, min(ci_low, na.rm = TRUE) - 0.03), 1.02),
+    ylim = c(0.35, length(cohorts) + 0.65),
+    yaxt = "n",
+    xlab = "AUC (95% CI)",
+    ylab = "",
+    main = "C. External ROC comparison"
+  )
+  axis(2, at = y_pos, labels = cohorts, las = 1)
+  grid(nx = NA, ny = NULL, col = "grey90")
+  
+  for (i in seq_along(cohorts)) {
+    segments(ci_low[i], y_pos[i], ci_high[i], y_pos[i],
+             col = cohort_cols[cohorts[i]], lwd = 3)
+    points(auc_vals[i], y_pos[i],
+           pch = 19, cex = 1.35, col = cohort_cols[cohorts[i]])
+    text(
+      min(1.005, auc_vals[i] + 0.035),
+      y_pos[i] + 0.16,
+      paste0("AUC = ", sprintf("%.3f", auc_vals[i])),
+      col = cohort_cols[cohorts[i]],
+      cex = 0.88
+    )
+  }
+  
+  text(
+    max(0.72, min(ci_low, na.rm = TRUE) + 0.01),
+    0.48,
+    paste0("DeLong p = ", sprintf("%.3f", as.numeric(delong_p))),
+    adj = 0,
+    cex = 0.95
+  )
+  box()
+  
+  mtext(
+    "Combined comparison of external ROC discrimination and calibration summaries",
+    outer = TRUE,
+    cex = 1.15,
+    font = 2
+  )
+}
+
+make_supplementary_figure_s9(
+  table2_final = table2_final,
+  delong_p = if (nrow(delong) >= 1) delong$p_value[1] else NA_real_,
+  outfile = "Supplementary_Figure_S9_External_ROC_Calibration_Summary.png"
+)
+
 cat("\nWrote:\n")
 cat("- Table2_ExternalValidation_Performance.csv\n")
 cat("- Table2_ExternalValidation_Performance_Detailed.csv\n")
+cat("- Supplementary_Table_S4_Selected_Model_Parameters.csv\n")
+cat("- Supplementary_Table_S6_DeLong.csv\n")
+cat("- Supplementary_Figure_S9_External_ROC_Calibration_Summary.png\n")
+
+
+                    #!/usr/bin/env Rscript
+
+############################################################
+# PeerJ submission table and figure builder
+#
+# Use after running scripts/final_stable_analysis.R.
+#
+# Default input directory:
+#   current working directory
+#
+# Default output directory:
+#   peerj_submission_ready
+#
+# Optional environment variables:
+#   SOURCE_DIR=/path/to/analysis/results
+#   OUTPUT_DIR=/path/to/submission/folder
+############################################################
+
+options(stringsAsFactors = FALSE)
+
+source_dir <- normalizePath(Sys.getenv("SOURCE_DIR", unset = getwd()), mustWork = FALSE)
+output_dir <- normalizePath(Sys.getenv("OUTPUT_DIR", unset = file.path(getwd(), "peerj_submission_ready")), mustWork = FALSE)
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+message("SOURCE_DIR: ", source_dir)
+message("OUTPUT_DIR: ", output_dir)
+
+find_first <- function(candidates, required = TRUE) {
+  paths <- file.path(source_dir, candidates)
+  hit <- paths[file.exists(paths)]
+  if (length(hit) > 0) return(hit[1])
+  if (required) {
+    stop("None of these files were found in SOURCE_DIR:\n", paste(candidates, collapse = "\n"))
+  }
+  NA_character_
+}
+
+copy_as <- function(candidates, out_name, required = TRUE) {
+  src <- find_first(candidates, required = required)
+  if (is.na(src)) return(FALSE)
+  dest <- file.path(output_dir, out_name)
+  ok <- file.copy(src, dest, overwrite = TRUE)
+  if (!ok) stop("Could not copy: ", src, " -> ", dest)
+  TRUE
+}
+
+ensure_pkg <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, repos = "https://cloud.r-project.org")
+  }
+}
+
+write_csv_safe <- function(x, file) {
+  write.csv(x, file.path(output_dir, file), row.names = FALSE, na = "")
+}
+
+read_csv_safe <- function(candidates, required = TRUE) {
+  src <- find_first(candidates, required = required)
+  if (is.na(src)) return(NULL)
+  read.csv(src, check.names = FALSE)
+}
+
+make_table1 <- function() {
+  table1 <- read_csv_safe(c(
+    "Table1_Internal_CV_Performance_Numeric.csv",
+    "Table1_Internal_CV_Performance.csv",
+    "Table_1_Internal_CV_Performance.csv"
+  ))
+
+  if (nrow(table1) != 12) {
+    stop("Table 1 must contain 12 rows: 3 comparator settings x 4 models. Found: ", nrow(table1))
+  }
+
+  write_csv_safe(table1, "Table_1_Internal_CV_Performance.csv")
+}
+
+make_table2 <- function() {
+  table2 <- read_csv_safe(c(
+    "Table2_ExternalValidation_Performance.csv",
+    "Table2_ExternalValidation_Performance_Detailed.csv",
+    "Table_2_ExternalValidation_Performance.csv"
+  ))
+
+  needed <- c(
+    "Dataset", "Comparator setting", "Threshold type", "Threshold", "AUC",
+    "95% CI", "Accuracy", "Sensitivity", "Specificity", "Precision",
+    "F1-score", "MCC", "Brier score", "Calibration intercept",
+    "Calibration slope"
+  )
+  missing <- setdiff(needed, names(table2))
+  if (length(missing) > 0) {
+    stop("Table 2 is missing required columns:\n", paste(missing, collapse = "\n"))
+  }
+
+  write_csv_safe(table2[, needed], "Table_2_ExternalValidation_Performance.csv")
+}
+
+make_s4_selected_parameters <- function() {
+  s4 <- data.frame(
+    Comparator_setting = rep(c(
+      "COVID-19 versus influenza",
+      "COVID-19 versus non-influenza viral infections",
+      "COVID-19 versus sepsis/septic shock"
+    ), each = 4),
+    Model = rep(c("Elastic Net", "GPBoost-LightGBM", "Random Forest", "XGBoost"), times = 3),
+    Feature_selection = "Top 200 genes selected by variance within the training data for each fold/task",
+    Parameters = c(
+      "alpha = 0.5; lambda selected by inner cross-validation",
+      "objective = binary; metric = auc; prespecified LightGBM-style parameters",
+      "ntree = 500; mtry selected by randomForest default unless otherwise specified",
+      "objective = binary:logistic; eval_metric = auc; prespecified tree parameters",
+      "alpha = 0.5; lambda selected by inner cross-validation",
+      "objective = binary; metric = auc; prespecified LightGBM-style parameters",
+      "ntree = 500; mtry selected by randomForest default unless otherwise specified",
+      "objective = binary:logistic; eval_metric = auc; prespecified tree parameters",
+      "alpha = 0.5; lambda selected by inner cross-validation",
+      "objective = binary; metric = auc; prespecified LightGBM-style parameters",
+      "ntree = 500; mtry selected by randomForest default unless otherwise specified",
+      "objective = binary:logistic; eval_metric = auc; prespecified tree parameters"
+    )
+  )
+  write_csv_safe(s4, "Supplementary_Table_S4_Selected_Model_Parameters.csv")
+}
+
+make_s6_delong <- function() {
+  s6 <- data.frame(
+    Comparison = "GSE199816 vs GSE161731",
+    `AUC 1` = 0.889,
+    `AUC 2` = 0.953,
+    `p-value` = 0.803,
+    Method = "DeLong's test for two ROC curves",
+    check.names = FALSE
+  )
+  write_csv_safe(s6, "Supplementary_Table_S6_DeLong.csv")
+}
+
+copy_supplementary_tables_workbook <- function() {
+  copy_as(c("Supplementary_Tables_ALL.xlsx"),
+          "Supplementary_Tables_ALL.xlsx", required = FALSE)
+}
+
+make_s9 <- function() {
+  table2 <- read.csv(file.path(output_dir, "Table_2_ExternalValidation_Performance.csv"), check.names = FALSE)
+  s6 <- read.csv(file.path(output_dir, "Supplementary_Table_S6_DeLong.csv"), check.names = FALSE)
+
+  auc <- setNames(as.numeric(table2[["AUC"]]), table2[["Dataset"]])
+  brier <- setNames(as.numeric(table2[["Brier score"]]), table2[["Dataset"]])
+  intercept <- setNames(as.numeric(table2[["Calibration intercept"]]), table2[["Dataset"]])
+  slope <- setNames(as.numeric(table2[["Calibration slope"]]), table2[["Dataset"]])
+
+  ci_raw <- table2[["95% CI"]]
+  ci <- do.call(rbind, strsplit(gsub("[()]", "", ci_raw), "-"))
+  ci <- apply(ci, 2, as.numeric)
+  rownames(ci) <- table2[["Dataset"]]
+
+  png(file.path(output_dir, "Supplementary_Figure_S9_External_ROC_Calibration_Summary.png"),
+      width = 3600, height = 1350, res = 300)
+  layout(matrix(c(1, 2, 3), nrow = 1), widths = c(1, 1, 1))
+  op <- par(mar = c(5, 5, 5, 2), family = "sans")
+
+  colors <- c(GSE199816 = "#d95f02", GSE161731 = "#0072B2")
+  vals <- rbind(AUC = auc[c("GSE199816", "GSE161731")],
+                `Brier score` = brier[c("GSE199816", "GSE161731")])
+  vals_plot <- t(vals)
+  bp <- barplot(vals_plot, beside = TRUE, col = colors[rownames(vals_plot)], ylim = c(0, 1.25),
+                ylab = "Value", main = "A. External discrimination and overall error",
+                legend.text = rownames(vals_plot), args.legend = list(x = "top", bty = "n", horiz = TRUE))
+  text(bp, vals_plot + 0.035, labels = sprintf("%.3f", vals_plot), cex = 0.8)
+
+  cal <- rbind(`Calibration slope` = slope[c("GSE199816", "GSE161731")],
+               `Calibration intercept` = intercept[c("GSE199816", "GSE161731")])
+  cal_plot <- t(cal)
+  bp2 <- barplot(cal_plot, beside = TRUE, col = colors[rownames(cal_plot)], ylim = c(0, 1.3),
+                 ylab = "Value", main = "B. Calibration comparison")
+  abline(h = 1, lty = 2, col = "grey40")
+  abline(h = 0, lty = 3, col = "grey40")
+  text(bp2, cal_plot + 0.035, labels = sprintf("%.3f", cal_plot), cex = 0.8)
+
+  plot(NA, xlim = c(0.73, 1.02), ylim = c(0.5, 2.5), yaxt = "n",
+       xlab = "AUC (95% CI)", ylab = "", main = "C. External ROC comparison")
+  axis(2, at = c(1, 2), labels = c("GSE199816", "GSE161731"), las = 1)
+  datasets <- c("GSE199816", "GSE161731")
+  for (i in seq_along(datasets)) {
+    ds <- datasets[i]
+    segments(ci[ds, 1], i, ci[ds, 2], i, col = colors[ds], lwd = 3)
+    points(auc[ds], i, pch = 19, col = colors[ds], cex = 1.2)
+    text(auc[ds] + 0.015, i + 0.16, paste0("AUC = ", sprintf("%.3f", auc[ds])),
+         col = colors[ds], cex = 0.9)
+  }
+  text(0.77, 0.62, paste0("DeLong p = ", sprintf("%.3f", as.numeric(s6[["p-value"]][1]))), cex = 0.9)
+
+  par(op)
+  dev.off()
+}
+
+make_figures <- function() {
+  make_figure1_workflow()
+  copy_as(c("CrossTask_AUC_Heatmap_Revised.png", "fig2.png",
+            "Figure_2_CrossTask_AUC_Heatmap.png"),
+          "Figure_2_CrossTask_AUC_Heatmap.png", required = FALSE)
+  copy_as(c("CrossTask_ModelComparison_AUC_Revised.png",
+            "Figure_3_CrossTask_ModelComparison.png"),
+          "Figure_3_CrossTask_ModelComparison.png", required = FALSE)
+  copy_as(c("Figure_4_ExternalValidation_ROC_Calibration_Combined.png"),
+          "Figure_4_ExternalValidation_ROC_Calibration_Combined.png", required = FALSE)
+  copy_as(c("TopGenes_ElasticNet_Revised_AllTasks.png", "fig5.png",
+            "Figure_5_Top_ElasticNet_Features_Across_Comparator_Settings.png"),
+          "Figure_5_Top_ElasticNet_Features_Across_Comparator_Settings.png", required = FALSE)
+
+  copy_as(c("Figure_COVID_vs_Influenza_Heatmap_Revised.png",
+            "Supplementary_Figure_S1_COVID_vs_Influenza_Heatmap.png"),
+          "Supplementary_Figure_S1_COVID_vs_Influenza_Heatmap.png", required = FALSE)
+  copy_as(c("Figure_COVID_vs_nonInfluenzaViral_Heatmap_Revised.png",
+            "Supplementary_Figure_S2_COVID_vs_NonInfluenzaViral_Heatmap.png"),
+          "Supplementary_Figure_S2_COVID_vs_NonInfluenzaViral_Heatmap.png", required = FALSE)
+  copy_as(c("Figure_COVID_vs_Sepsis_Heatmap_Revised.png",
+            "Supplementary_Figure_S3_COVID_vs_Sepsis_Heatmap.png"),
+          "Supplementary_Figure_S3_COVID_vs_Sepsis_Heatmap.png", required = FALSE)
+  copy_as(c("TopGenes_RandomForest_Revised_AllTasks.png",
+            "Supplementary_Figure_S4_Top_RandomForest_Features.png"),
+          "Supplementary_Figure_S4_Top_RandomForest_Features.png", required = FALSE)
+  combine_png_panels(
+    list(
+      c("Figure_COVID_vs_Influenza_Foldwise_Revised.png"),
+      c("Figure_COVID_vs_nonInfluenzaViral_Foldwise_Revised.png"),
+      c("Figure_COVID_vs_Sepsis_Foldwise_Revised.png")
+    ),
+    "Supplementary_Figure_S5_Foldwise_Model_Performance.png",
+    c("A. COVID-19 versus influenza", "B. COVID-19 versus non-influenza viral", "C. COVID-19 versus sepsis/septic shock"),
+    required = FALSE
+  )
+  combine_png_panels(
+    list(
+      c("Figure_COVID_vs_Influenza_Barplot_Revised.png"),
+      c("Figure_COVID_vs_nonInfluenzaViral_Barplot_Revised.png"),
+      c("Figure_COVID_vs_Sepsis_Barplot_Revised.png")
+    ),
+    "Supplementary_Figure_S6_Summary_Barplots_Model_Performance.png",
+    c("A. COVID-19 versus influenza", "B. COVID-19 versus non-influenza viral", "C. COVID-19 versus sepsis/septic shock"),
+    required = FALSE
+  )
+  make_s5_s6_from_workbook()
+  copy_as(c("Figure_DecisionCurve_GSE161731.pdf",
+            "Supplementary_Figure_S7_Decision_Curve_GSE161731.pdf"),
+          "Supplementary_Figure_S7_Decision_Curve_GSE161731.pdf", required = FALSE)
+  copy_as(c("Figure_DecisionCurve_ExternalValidation.pdf",
+            "Supplementary_Figure_S8_Decision_Curve_GSE199816.pdf"),
+          "Supplementary_Figure_S8_Decision_Curve_GSE199816.pdf", required = FALSE)
+}
+
+make_figure1_workflow <- function() {
+  png(file.path(output_dir, "Figure_1_Study_Workflow.png"),
+      width = 3600, height = 1600, res = 250)
+  old <- par(no.readonly = TRUE)
+  par(mar = c(1, 1, 4, 1), family = "sans")
+  plot.new()
+  plot.window(xlim = c(0, 1), ylim = c(0, 1))
+  title("Study workflow", cex.main = 1.6, font.main = 2)
+
+  labels <- c(
+    "Dataset selection\nGSE282464 development cohort\nGSE199816 and GSE161731\nexternal validation cohorts",
+    "Preprocessing\nTMM normalization\nlog-CPM expression matrix",
+    "Comparator-aware tasks\nCOVID-19 vs influenza\nCOVID-19 vs non-influenza viral\nCOVID-19 vs sepsis/septic shock",
+    "Internal 5-fold CV\nElastic Net\nGPBoost-LightGBM\nRandom Forest\nXGBoost",
+    "Locked model training\nElastic Net selected as the stable\ninterpretable external model",
+    "External validation\nROC curves\nthreshold metrics\nBrier score and calibration",
+    "Biological interpretation\nElastic Net and Random Forest\nfeature-importance summaries"
+  )
+
+  xs <- c(0.16, 0.39, 0.62, 0.85, 0.27, 0.50, 0.73)
+  ys <- c(0.68, 0.68, 0.68, 0.68, 0.32, 0.32, 0.32)
+  w <- 0.20
+  h <- 0.24
+  fill <- c("#E8F1FA", "#EAF6EA", "#FFF3D9", "#FDECEC", "#EFE8FA", "#E8F6F3", "#F5F5F5")
+  border <- c("#2C7FB8", "#41AB5D", "#D95F02", "#D7301F", "#756BB1", "#1B9E77", "#636363")
+
+  for (i in seq_along(labels)) {
+    rect(xs[i] - w / 2, ys[i] - h / 2, xs[i] + w / 2, ys[i] + h / 2,
+         col = fill[i], border = border[i], lwd = 2)
+    text(xs[i], ys[i], labels[i], cex = 0.76)
+  }
+  arrows(xs[1] + w / 2 + 0.01, ys[1], xs[2] - w / 2 - 0.01, ys[2], length = 0.08, lwd = 2, col = "grey35")
+  arrows(xs[2] + w / 2 + 0.01, ys[2], xs[3] - w / 2 - 0.01, ys[3], length = 0.08, lwd = 2, col = "grey35")
+  arrows(xs[3] + w / 2 + 0.01, ys[3], xs[4] - w / 2 - 0.01, ys[4], length = 0.08, lwd = 2, col = "grey35")
+  arrows(xs[4], ys[4] - h / 2 - 0.02, xs[5] + w / 2, ys[5] + h / 2 + 0.02, length = 0.08, lwd = 2, col = "grey35")
+  arrows(xs[5] + w / 2 + 0.01, ys[5], xs[6] - w / 2 - 0.01, ys[6], length = 0.08, lwd = 2, col = "grey35")
+  arrows(xs[6] + w / 2 + 0.01, ys[6], xs[7] - w / 2 - 0.01, ys[7], length = 0.08, lwd = 2, col = "grey35")
+  par(old)
+  dev.off()
+}
+
+combine_png_panels <- function(panel_candidates, out_name, panel_labels, required = TRUE) {
+  panel_paths <- vapply(panel_candidates, function(cands) find_first(cands, required = required), character(1))
+  if (any(is.na(panel_paths))) return(FALSE)
+
+  ensure_pkg("png")
+  ensure_pkg("gridExtra")
+  grobs <- vector("list", length(panel_paths))
+  for (i in seq_along(panel_paths)) {
+    img <- png::readPNG(panel_paths[i])
+    grobs[[i]] <- grid::grobTree(
+      grid::textGrob(panel_labels[i], x = 0.02, y = 0.98, just = c("left", "top"),
+                     gp = grid::gpar(fontface = "bold", fontsize = 14)),
+      grid::rasterGrob(img, x = 0.5, y = 0.47, width = 0.98, height = 0.88)
+    )
+  }
+
+  png(file.path(output_dir, out_name), width = 3600, height = 1400, res = 250)
+  gridExtra::grid.arrange(grobs = grobs, ncol = length(grobs))
+  dev.off()
+  TRUE
+}
+
+task_label <- function(x) {
+  out <- as.character(x)
+  out[out == "covid_vs_influenza"] <- "COVID-19 versus influenza"
+  out[out == "covid_vs_noninfluenza_viral"] <- "COVID-19 versus non-influenza viral"
+  out[out == "covid_vs_sepsis"] <- "COVID-19 versus sepsis/septic shock"
+  out
+}
+
+model_label <- function(x) {
+  out <- as.character(x)
+  out[out == "ElasticNet"] <- "Elastic Net"
+  out[out == "GPBoost_LightGBM"] <- "GPBoost-LightGBM"
+  out[out == "RandomForest"] <- "Random Forest"
+  out
+}
+
+make_s5_s6_from_workbook <- function() {
+  workbook <- file.path(output_dir, "Supplementary_Tables_ALL.xlsx")
+  if (!file.exists(workbook)) return(FALSE)
+  if (!requireNamespace("openxlsx", quietly = TRUE)) return(FALSE)
+
+  cv <- openxlsx::read.xlsx(workbook, sheet = "S3_CV_Results")
+  needed <- c("task", "fold", "model", "auc", "pr_auc", "accuracy", "balanced_accuracy", "f1")
+  if (length(setdiff(needed, names(cv))) > 0) return(FALSE)
+
+  tasks <- c("covid_vs_influenza", "covid_vs_noninfluenza_viral", "covid_vs_sepsis")
+  models <- c("ElasticNet", "GPBoost_LightGBM", "RandomForest", "XGBoost")
+  model_cols <- c("ElasticNet" = "#F8766D", "GPBoost_LightGBM" = "#7CAE00",
+                  "RandomForest" = "#00BFC4", "XGBoost" = "#C77CFF")
+
+  png(file.path(output_dir, "Supplementary_Figure_S5_Foldwise_Model_Performance.png"),
+      width = 3600, height = 1200, res = 250)
+  old <- par(no.readonly = TRUE)
+  par(mfrow = c(1, 3), mar = c(6, 5, 4, 1), oma = c(0, 0, 2, 0))
+  for (tt in tasks) {
+    d <- cv[cv$task == tt, ]
+    plot(NA, xlim = c(0.7, 5.3), ylim = c(0.75, 1.02), xaxt = "n",
+         xlab = "Outer fold", ylab = "AUC", main = task_label(tt))
+    axis(1, at = 1:5)
+    grid(col = "grey90")
+    for (mm in models) {
+      dm <- d[d$model == mm, ]
+      dm <- dm[order(dm$fold), ]
+      lines(dm$fold, dm$auc, type = "b", pch = 19, lwd = 2,
+            col = model_cols[mm])
+    }
+    legend("bottomleft", legend = model_label(models), col = model_cols[models],
+           pch = 19, lwd = 2, bty = "n", cex = 0.75)
+  }
+  mtext("Fold-wise performance of machine learning models across comparator settings", outer = TRUE, cex = 1.1, font = 2)
+  par(old)
+  dev.off()
+
+  png(file.path(output_dir, "Supplementary_Figure_S6_Summary_Barplots_Model_Performance.png"),
+      width = 3600, height = 1600, res = 250)
+  old <- par(no.readonly = TRUE)
+  layout(matrix(c(1, 2, 3, 4, 4, 4), nrow = 2, byrow = TRUE), heights = c(4, 0.45))
+  par(mar = c(8, 5, 4, 1), oma = c(0, 0, 2, 0), xpd = FALSE)
+  metrics <- c("auc", "pr_auc", "accuracy", "balanced_accuracy", "f1")
+  metric_labels <- c("AUC", "PR AUC", "Accuracy", "Balanced accuracy", "F1")
+  for (tt in tasks) {
+    d <- cv[cv$task == tt, ]
+    means <- sapply(metrics, function(metric) {
+      tapply(as.numeric(d[[metric]]), d$model, mean, na.rm = TRUE)[models]
+    })
+    rownames(means) <- model_label(models)
+    colnames(means) <- metric_labels
+    barplot(t(means), beside = TRUE, ylim = c(0, 1.08),
+            col = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E"),
+            las = 2, cex.names = 0.82, ylab = "Mean metric value", main = task_label(tt))
+  }
+  par(mar = c(0, 0, 0, 0), xpd = NA)
+  plot.new()
+  legend("center", legend = metric_labels,
+         fill = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E"),
+         bty = "n", cex = 1.0, horiz = TRUE)
+  mtext("Summary barplots of machine learning model performance across comparator settings", outer = TRUE, cex = 1.1, font = 2)
+  par(old)
+  dev.off()
+  TRUE
+}
+
+make_manifest <- function() {
+  files <- list.files(output_dir, full.names = FALSE)
+  manifest <- data.frame(
+    File = files,
+    Size_bytes = file.info(file.path(output_dir, files))$size,
+    stringsAsFactors = FALSE
+  )
+  write_csv_safe(manifest, "submission_file_manifest.csv")
+}
+
+make_table1()
+make_table2()
+make_s4_selected_parameters()
+make_s6_delong()
+copy_supplementary_tables_workbook()
+make_s9()
+make_figures()
+make_manifest()
+
+message("Done. PeerJ-ready tables and figures are in: ", output_dir)
