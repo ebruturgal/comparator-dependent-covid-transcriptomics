@@ -1064,6 +1064,42 @@ write.csv(
   row.names = FALSE
 )
 
+expected_table1_tasks <- c(
+  "covid_vs_influenza",
+  "covid_vs_noninfluenza_viral",
+  "covid_vs_sepsis"
+)
+
+expected_table1_models <- c(
+  "ElasticNet",
+  "GPBoost_LightGBM",
+  "RandomForest",
+  "XGBoost"
+)
+
+expected_table1_grid <- expand.grid(
+  task = expected_table1_tasks,
+  model = expected_table1_models,
+  stringsAsFactors = FALSE
+)
+
+observed_table1_grid <- all_cv_results_long %>%
+  distinct(task, model)
+
+missing_table1_grid <- expected_table1_grid %>%
+  anti_join(observed_table1_grid, by = c("task", "model"))
+
+if (nrow(missing_table1_grid) > 0) {
+  stop(
+    "Table 1 is incomplete. Missing task/model rows:\n",
+    paste(
+      paste(missing_table1_grid$task, missing_table1_grid$model, sep = " / "),
+      collapse = "\n"
+    ),
+    "\nTable 1 must contain 12 rows: 3 comparator settings x 4 models."
+  )
+}
+
 format_mean_sd <- function(x) {
   x <- suppressWarnings(as.numeric(x))
   x <- x[is.finite(x)]
@@ -1128,14 +1164,17 @@ table1_internal_cv <- all_cv_results_long %>%
     ),
     factor(
       Model,
-      levels = c(
-        "ElasticNet",
-        "RandomForest",
-        "XGBoost",
-        "GPBoost_LightGBM"
-      )
+      levels = expected_table1_models
     )
   )
+
+if (nrow(table1_internal_cv) != 12) {
+  stop(
+    "Table 1 row-count check failed. Expected 12 rows, got ",
+    nrow(table1_internal_cv),
+    "."
+  )
+}
 
 write.csv(
   table1_internal_cv,
@@ -1185,12 +1224,7 @@ table1_internal_cv_numeric <- all_cv_results_long %>%
     ),
     factor(
       Model,
-      levels = c(
-        "ElasticNet",
-        "RandomForest",
-        "XGBoost",
-        "GPBoost_LightGBM"
-      )
+      levels = expected_table1_models
     )
   )
 
@@ -5207,3 +5241,446 @@ ggsave(
   height = 10,
   dpi = 600
 )
+
+
+############################################################
+# 99) OPTIONAL MANUSCRIPT TABLE 1 BUILDER
+# Source: make_table1_internal_cv_summary.R
+############################################################
+
+#!/usr/bin/env Rscript
+
+############################################################
+# Build manuscript Table 1: internal 5-fold CV summary
+############################################################
+#
+# Works with older R versions because it does not require dplyr/readxl/tibble.
+#
+# Accepted sources:
+# 1) Three fold-level CV CSV files
+# 2) All_CV_Results_Long_Revised.csv
+# 3) Supplementary_Tables_ALL.xlsx, sheet S3_CV_Results
+#
+# Usage:
+# Rscript scripts/make_table1_internal_cv_summary.R
+# Rscript scripts/make_table1_internal_cv_summary.R "path/to/source_folder" "path/to/output_folder"
+#
+# Outputs:
+# - Table1_Internal_CV_Performance.csv
+# - Table1_Internal_CV_Performance_Numeric.csv
+
+args <- commandArgs(trailingOnly = TRUE)
+
+input_dir_arg <- if (length(args) >= 1) args[1] else NA_character_
+output_dir <- if (length(args) >= 2) args[2] else getwd()
+
+candidate_dirs <- unique(c(
+  input_dir_arg,
+  getwd(),
+  "C:/Users/User/Documents",
+  "C:/Users/User/Desktop/resim_ve_tablolar"
+))
+candidate_dirs <- candidate_dirs[!is.na(candidate_dirs) & dir.exists(candidate_dirs)]
+
+required_fold_files <- c(
+  "GSE282464_COVID_vs_Influenza_Revised_All_CV_Results.csv",
+  "GSE282464_COVID_vs_nonInfluenzaViral_Revised_All_CV_Results.csv",
+  "GSE282464_COVID_vs_Sepsis_Revised_All_CV_Results.csv"
+)
+
+find_source <- function() {
+  for (d in candidate_dirs) {
+    fold_paths <- file.path(d, required_fold_files)
+    if (all(file.exists(fold_paths))) {
+      return(list(type = "fold_csvs", dir = d, paths = fold_paths))
+    }
+  }
+  
+  for (d in candidate_dirs) {
+    long_path <- file.path(d, "All_CV_Results_Long_Revised.csv")
+    if (file.exists(long_path)) {
+      return(list(type = "long_csv", dir = d, paths = long_path))
+    }
+  }
+  
+  for (d in candidate_dirs) {
+    xlsx_path <- file.path(d, "Supplementary_Tables_ALL.xlsx")
+    if (file.exists(xlsx_path)) {
+      return(list(type = "supplementary_xlsx", dir = d, paths = xlsx_path))
+    }
+  }
+  
+  stop(
+    "No Table 1 source file found.\n",
+    "Expected either the three fold-level CSV files, ",
+    "All_CV_Results_Long_Revised.csv, or Supplementary_Tables_ALL.xlsx.\n",
+    "Searched folders:\n",
+    paste(candidate_dirs, collapse = "\n")
+  )
+}
+
+source_info <- find_source()
+message("Using Table 1 source: ", source_info$type)
+message("Source folder/file: ", paste(source_info$paths, collapse = " | "))
+
+read_cv_results <- function(source_info) {
+  if (source_info$type == "fold_csvs") {
+    return(do.call(rbind, lapply(
+      source_info$paths,
+      read.csv,
+      stringsAsFactors = FALSE,
+      check.names = FALSE
+    )))
+  }
+  
+  if (source_info$type == "long_csv") {
+    return(read.csv(
+      source_info$paths,
+      stringsAsFactors = FALSE,
+      check.names = FALSE
+    ))
+  }
+  
+  if (source_info$type == "supplementary_xlsx") {
+    if (!requireNamespace("openxlsx", quietly = TRUE)) {
+      stop(
+        "Package 'openxlsx' is required to read Supplementary_Tables_ALL.xlsx.\n",
+        "Install it with: install.packages('openxlsx')\n",
+        "Alternative: save S3_CV_Results as All_CV_Results_Long_Revised.csv."
+      )
+    }
+    
+    return(openxlsx::read.xlsx(
+      source_info$paths,
+      sheet = "S3_CV_Results"
+    ))
+  }
+  
+  stop("Unknown source type: ", source_info$type)
+}
+
+all_cv_results_long <- read_cv_results(source_info)
+
+required_columns <- c(
+  "dataset", "task", "fold", "model", "auc", "pr_auc", "accuracy",
+  "balanced_accuracy", "sensitivity", "specificity", "precision",
+  "f1", "mcc", "brier"
+)
+
+missing_columns <- setdiff(required_columns, names(all_cv_results_long))
+if (length(missing_columns) > 0) {
+  stop(
+    "Table 1 source is missing required columns:\n",
+    paste(missing_columns, collapse = ", "),
+    "\nAvailable columns:\n",
+    paste(names(all_cv_results_long), collapse = ", ")
+  )
+}
+
+expected_table1_tasks <- c(
+  "covid_vs_influenza",
+  "covid_vs_noninfluenza_viral",
+  "covid_vs_sepsis"
+)
+
+expected_table1_models <- c(
+  "ElasticNet",
+  "GPBoost_LightGBM",
+  "RandomForest",
+  "XGBoost"
+)
+
+expected_table1_grid <- expand.grid(
+  task = expected_table1_tasks,
+  model = expected_table1_models,
+  stringsAsFactors = FALSE
+)
+
+observed_key <- paste(all_cv_results_long$task, all_cv_results_long$model, sep = " / ")
+expected_key <- paste(expected_table1_grid$task, expected_table1_grid$model, sep = " / ")
+missing_key <- expected_key[!expected_key %in% observed_key]
+
+if (length(missing_key) > 0) {
+  stop(
+    "Table 1 is incomplete. Missing task/model rows:\n",
+    paste(missing_key, collapse = "\n"),
+    "\nTable 1 must contain 12 rows: 3 comparator settings x 4 models."
+  )
+}
+
+task_label <- function(x) {
+  out <- as.character(x)
+  out[x == "covid_vs_influenza"] <- "COVID-19 versus influenza"
+  out[x == "covid_vs_noninfluenza_viral"] <- "COVID-19 versus non-influenza viral infections"
+  out[x == "covid_vs_sepsis"] <- "COVID-19 versus sepsis/septic shock"
+  out
+}
+
+num_vec <- function(x) {
+  suppressWarnings(as.numeric(x))
+}
+
+format_mean_sd <- function(x) {
+  x <- num_vec(x)
+  x <- x[is.finite(x)]
+  
+  if (length(x) == 0) {
+    return(NA_character_)
+  }
+  
+  mean_x <- mean(x, na.rm = TRUE)
+  sd_x <- if (length(x) > 1) stats::sd(x, na.rm = TRUE) else 0
+  
+  paste0(
+    sprintf("%.3f", mean_x),
+    " +/- ",
+    sprintf("%.3f", sd_x)
+  )
+}
+
+mean_or_na <- function(x) {
+  x <- num_vec(x)
+  x <- x[is.finite(x)]
+  if (length(x) == 0) return(NA_real_)
+  mean(x, na.rm = TRUE)
+}
+
+sd_or_zero <- function(x) {
+  x <- num_vec(x)
+  x <- x[is.finite(x)]
+  if (length(x) == 0) return(NA_real_)
+  if (length(x) == 1) return(0)
+  stats::sd(x, na.rm = TRUE)
+}
+
+make_summary_row <- function(task_name, model_name) {
+  d <- all_cv_results_long[
+    all_cv_results_long$task == task_name &
+      all_cv_results_long$model == model_name,
+    ,
+    drop = FALSE
+  ]
+  
+  data.frame(
+    Comparator = task_label(task_name),
+    Model = model_name,
+    Folds = length(unique(d$fold)),
+    AUC = format_mean_sd(d$auc),
+    PR_AUC = format_mean_sd(d$pr_auc),
+    Accuracy = format_mean_sd(d$accuracy),
+    Balanced_accuracy = format_mean_sd(d$balanced_accuracy),
+    Sensitivity = format_mean_sd(d$sensitivity),
+    Specificity = format_mean_sd(d$specificity),
+    Precision = format_mean_sd(d$precision),
+    F1 = format_mean_sd(d$f1),
+    MCC = format_mean_sd(d$mcc),
+    Brier_score = format_mean_sd(d$brier),
+    stringsAsFactors = FALSE
+  )
+}
+
+make_numeric_row <- function(task_name, model_name) {
+  d <- all_cv_results_long[
+    all_cv_results_long$task == task_name &
+      all_cv_results_long$model == model_name,
+    ,
+    drop = FALSE
+  ]
+  
+  data.frame(
+    dataset = ifelse(length(unique(d$dataset)) > 0, unique(d$dataset)[1], NA_character_),
+    Comparator = task_label(task_name),
+    Model = model_name,
+    folds = length(unique(d$fold)),
+    mean_auc = mean_or_na(d$auc),
+    sd_auc = sd_or_zero(d$auc),
+    mean_pr_auc = mean_or_na(d$pr_auc),
+    sd_pr_auc = sd_or_zero(d$pr_auc),
+    mean_accuracy = mean_or_na(d$accuracy),
+    sd_accuracy = sd_or_zero(d$accuracy),
+    mean_balanced_accuracy = mean_or_na(d$balanced_accuracy),
+    sd_balanced_accuracy = sd_or_zero(d$balanced_accuracy),
+    mean_sensitivity = mean_or_na(d$sensitivity),
+    sd_sensitivity = sd_or_zero(d$sensitivity),
+    mean_specificity = mean_or_na(d$specificity),
+    sd_specificity = sd_or_zero(d$specificity),
+    mean_precision = mean_or_na(d$precision),
+    sd_precision = sd_or_zero(d$precision),
+    mean_f1 = mean_or_na(d$f1),
+    sd_f1 = sd_or_zero(d$f1),
+    mean_mcc = mean_or_na(d$mcc),
+    sd_mcc = sd_or_zero(d$mcc),
+    mean_brier = mean_or_na(d$brier),
+    sd_brier = sd_or_zero(d$brier),
+    stringsAsFactors = FALSE
+  )
+}
+
+table1_internal_cv <- do.call(rbind, Map(
+  make_summary_row,
+  expected_table1_grid$task,
+  expected_table1_grid$model
+))
+
+table1_internal_cv_numeric <- do.call(rbind, Map(
+  make_numeric_row,
+  expected_table1_grid$task,
+  expected_table1_grid$model
+))
+
+if (nrow(table1_internal_cv) != 12) {
+  stop(
+    "Table 1 row-count check failed. Expected 12 rows, got ",
+    nrow(table1_internal_cv),
+    "."
+  )
+}
+
+if (!dir.exists(output_dir)) {
+  dir.create(output_dir, recursive = TRUE)
+}
+
+write.csv(
+  table1_internal_cv,
+  file.path(output_dir, "Table1_Internal_CV_Performance.csv"),
+  row.names = FALSE,
+  fileEncoding = "UTF-8"
+)
+
+write.csv(
+  table1_internal_cv_numeric,
+  file.path(output_dir, "Table1_Internal_CV_Performance_Numeric.csv"),
+  row.names = FALSE
+)
+
+message("Saved Table 1 files:")
+message("- ", file.path(output_dir, "Table1_Internal_CV_Performance.csv"))
+message("- ", file.path(output_dir, "Table1_Internal_CV_Performance_Numeric.csv"))
+
+
+############################################################
+# 100) MANUSCRIPT TABLE 2 BUILDER
+# Source: make_table2_external_validation.R
+############################################################
+
+############################################################
+# Build Table 2: External validation performance summary
+#
+# Run this script in the same working directory where the external
+# validation CSV outputs were written by final_stable_analysis.R.
+############################################################
+
+required_files <- c(
+  "GSE199816_ExternalValidation_Metrics.csv",
+  "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv",
+  "GSE161731_ExternalValidation_Metrics.csv",
+  "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv",
+  "ExternalValidation_Calibration_Summary.csv",
+  "DeLong_ExternalValidation_Comparison.csv"
+)
+
+missing_files <- required_files[!file.exists(required_files)]
+if (length(missing_files) > 0) {
+  stop(
+    "The following required files are missing:\n",
+    paste0(" - ", missing_files, collapse = "\n"),
+    "\n\nRun final_stable_analysis.R first, then rerun this script from the output directory."
+  )
+}
+
+read_one <- function(path) {
+  read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+}
+
+add_missing_columns <- function(df, cols) {
+  for (cc in cols) {
+    if (!cc %in% names(df)) df[[cc]] <- NA
+  }
+  df
+}
+
+metric_cols <- c(
+  "auc", "auc_ci_low", "auc_ci_mid", "auc_ci_high",
+  "accuracy", "balanced_accuracy", "sensitivity", "specificity",
+  "precision", "f1", "mcc", "brier", "threshold"
+)
+
+format_dataset_rows <- function(dataset, comparator, metrics_05_path, metrics_youden_path) {
+  m05 <- read_one(metrics_05_path)
+  my <- read_one(metrics_youden_path)
+  
+  m05 <- add_missing_columns(m05, metric_cols)
+  my <- add_missing_columns(my, metric_cols)
+  
+  m05$threshold <- 0.5
+  m05$threshold_type <- "0.5"
+  my$threshold_type <- "Youden"
+  
+  out <- rbind(m05[, c(metric_cols, "threshold_type")], my[, c(metric_cols, "threshold_type")])
+  out$external_dataset <- dataset
+  out$comparator_setting <- comparator
+  
+  out[, c(
+    "external_dataset", "comparator_setting", "threshold_type", "threshold",
+    "auc", "auc_ci_low", "auc_ci_high",
+    "accuracy", "balanced_accuracy", "sensitivity", "specificity",
+    "precision", "f1", "mcc", "brier"
+  )]
+}
+
+detail_table <- rbind(
+  format_dataset_rows(
+    dataset = "GSE199816",
+    comparator = "COVID-19 vs sepsis",
+    metrics_05_path = "GSE199816_ExternalValidation_Metrics.csv",
+    metrics_youden_path = "GSE199816_ExternalValidation_Metrics_YoudenThreshold.csv"
+  ),
+  format_dataset_rows(
+    dataset = "GSE161731",
+    comparator = "COVID-19 vs influenza",
+    metrics_05_path = "GSE161731_ExternalValidation_Metrics.csv",
+    metrics_youden_path = "GSE161731_ExternalValidation_Metrics_YoudenThreshold.csv"
+  )
+)
+
+calibration <- read_one("ExternalValidation_Calibration_Summary.csv")
+calibration <- add_missing_columns(
+  calibration,
+  c("dataset", "calibration_intercept", "calibration_slope", "auc", "brier")
+)
+
+delong <- read_one("DeLong_ExternalValidation_Comparison.csv")
+delong <- add_missing_columns(delong, c("comparison", "auc_1", "auc_2", "p_value", "method"))
+
+detail_table <- merge(
+  detail_table,
+  calibration[, c("dataset", "calibration_intercept", "calibration_slope")],
+  by.x = "external_dataset",
+  by.y = "dataset",
+  all.x = TRUE
+)
+
+detail_table$delong_comparison <- if (nrow(delong) >= 1) delong$comparison[1] else NA
+detail_table$delong_p_value <- if (nrow(delong) >= 1) delong$p_value[1] else NA
+detail_table$delong_method <- if (nrow(delong) >= 1) delong$method[1] else NA
+
+detail_table <- detail_table[order(detail_table$external_dataset, detail_table$threshold_type), ]
+
+# Manuscript-ready Table 2: one row per external cohort using Youden
+# threshold-based metrics, plus discrimination, Brier score, and calibration.
+table2 <- subset(detail_table, threshold_type == "Youden")
+table2 <- table2[, c(
+  "external_dataset", "comparator_setting", "threshold",
+  "auc", "auc_ci_low", "auc_ci_high",
+  "accuracy", "balanced_accuracy", "sensitivity", "specificity",
+  "precision", "f1", "mcc", "brier",
+  "calibration_intercept", "calibration_slope",
+  "delong_comparison", "delong_p_value", "delong_method"
+)]
+
+write.csv(table2, "Table2_ExternalValidation_Performance.csv", row.names = FALSE)
+write.csv(detail_table, "Table2_ExternalValidation_Performance_Detailed.csv", row.names = FALSE)
+
+cat("\nWrote:\n")
+cat("- Table2_ExternalValidation_Performance.csv\n")
+cat("- Table2_ExternalValidation_Performance_Detailed.csv\n")
